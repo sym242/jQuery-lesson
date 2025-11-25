@@ -1,21 +1,99 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="../../common/css/reset.css">
-  <link rel="stylesheet" href="../../common/css/base.css">
-  <link rel="stylesheet" href="./css/style.css">
-  <title>Document</title>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../../common/css/reset.css">
+    <link rel="stylesheet" href="../../common/css/base.css">
+    <link rel="stylesheet" href="./css/style.css">
+    <title>Document</title>
 </head>
+
 <body>
-  <div class="wrapper" id="wrapper">
-    <button type="button" class="btn search-btn" id="pokemon_search">ポケモンを探す</button>
-  </div>
-  <script src="../../common/js/jquery.js"></script>
-  <script>
-    // 回答はここに書いてね
-  </script>
+    <div class="wrapper" id="wrapper">
+        <button type="button" class="btn search-btn" id="pokemon_search">ポケモンを探す</button>
+    </div>
+    <script src="../../common/js/jquery.js"></script>
+    <script>
+        // 回答はここに書いてね
+        $(function () {
+            $('#pokemon_search').click(getPokemonValue);
+
+            function getRandomId() {
+                return Math.floor(Math.random() * 151) + 1;
+            }
+
+            function getPokemonValue() {
+                let randomPokemonId = getRandomId();
+                $.ajax({
+                    url: `https://pokeapi.co/api/v2/pokemon/${randomPokemonId}`,
+                    method: 'GET'
+                }).done(function (res) {
+                    $.ajax({
+                        url: res.species.url,
+                        method: 'GET'
+                    }).done(function (nameRes) {
+                        let japaneseName = nameRes.names.find(name => name.language.name === 'ja');
+                        let encountHtml = `
+                        <p class="name">${japaneseName ? japaneseName.name : res.name}</p>
+                        <div>
+                            <img class="img" src="${res.sprites.front_default}" alt="">
+                        </div>
+                        <div>
+                            <button class="btn" id="catch">捕まえる</button>
+                            <button class="btn" data-js="reset">逃げる</button>
+                        </div>
+                        `;
+                        $('#wrapper').html(encountHtml);
+                        $('#catch').click(catchPokemon);
+                        $('[data-js="reset"]').click(pageReturn);
+                    }).fail(function (err) {
+                        console.error('名前取得に失敗', err);
+                    });
+                }).fail(function (err) {
+                    console.error('ポケモン取得に失敗', err);
+                });
+            }
+
+            function catchPokemon() {
+                let catchProbability = Math.random();
+                if (catchProbability < 0.5) {
+                    $.ajax({
+                        url: 'https://pokeapi.co/api/v2/item/4',
+                        method: 'GET'
+                    }).done(function (itemRes) {
+                        let ballImage = itemRes.sprites.default;
+                        let doneHtml = `
+                        <p class="name">ゲットしました</p>
+                        <div>
+                            <img class="img" src="${ballImage}" alt="">
+                        </div>
+                        <button class="btn" data-js="reset">戻る</button>
+                        `;
+                        $('#wrapper').html(doneHtml);
+                        $('[data-js="reset"]').click(pageReturn);
+                    });
+                } else {
+                    let failHtml = `
+                    <p class="text">逃げられてしまった...</p>
+                    <button class="btn mt" data-js="reset">戻る</button>
+                    `;
+                    $('#wrapper').html(failHtml);
+                    $('[data-js="reset"]').click(pageReturn);
+                }
+            }
+
+            function pageReturn() {
+                let startHtml = `
+                <button type="button" class="btn search-btn" id="pokemon_search">ポケモンを探す</button>
+                `;
+                $('#wrapper').html(startHtml);
+                $('#pokemon_search').click(getPokemonValue);
+            }
+        });
+    </script>
 </body>
+
 </html>
